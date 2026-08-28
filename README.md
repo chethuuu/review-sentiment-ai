@@ -1,236 +1,135 @@
-# ReviewSense — AI-Powered Review Sentiment Analyzer
+# ReviewSense - Review Sentiment Analyzer
 
-An end-to-end NLP application that classifies customer/product reviews as **Positive**
-or **Negative**, exposed through both a web interface and a REST API, containerized
-with Docker and deployable to any major cloud platform.
+MSc coursework project - a small web app that reads a customer review and predicts whether it's positive or negative, using a TF-IDF + Logistic Regression model. There's a simple web page to try it out, plus a REST API endpoint for the same thing.
 
----
+Live demo: https://chethana.pythonanywhere.com
 
-## 1. Problem Statement
+## Why this exists
 
-Businesses receive large volumes of unstructured text feedback every day — product
-reviews, app store comments, support tickets, survey responses. Manually reading and
-tagging this feedback to understand customer sentiment does not scale. Teams need a
-fast, automated way to know, at a glance, whether feedback is trending positive or
-negative so they can prioritize what to act on.
+Companies get a lot of review/feedback text - product reviews, app reviews, support tickets, etc. Reading through all of it by hand doesn't scale, so an automated way to flag whether feedback is positive or negative is genuinely useful (even just as a quick triage step before a human reads it).
 
-## 2. Use Case
+For this assignment the goal was to build the full pipeline end to end - dataset, model training, a working web app, an API, and deployment - rather than just training a model in a notebook and stopping there.
 
-ReviewSense can be used by:
-- **E-commerce / SaaS teams** to automatically tag incoming reviews or support tickets
-  by sentiment for triage and reporting.
-- **Product managers** to monitor sentiment trends over time from exported review data.
-- **Developers** as a drop-in sentiment API to embed into a larger pipeline (e.g. a
-  dashboard that batches and visualizes review sentiment).
-- **Students/researchers** as a lightweight, explainable baseline for text
-  classification experiments.
+Who'd actually use something like this:
+- A small e-commerce/SaaS team wanting to auto-tag reviews as they come in
+- A PM who wants a rough sentiment trend over time without reading every review
+- Another developer who just wants a sentiment endpoint to call from a bigger pipeline
 
-A user (or another system) submits a piece of review text through the web form or the
-API, and receives back a sentiment label plus a confidence score in real time.
+## How it works
 
-## 3. Solution Overview
+Nothing fancy on purpose. I went with a classic ML approach instead of a transformer model because:
 
-The application uses a classical, lightweight NLP pipeline rather than a large
-pretrained model, by design — this keeps the model fast, cheap to run, easy to explain,
-and simple to redeploy without any GPU or large model download at build time (which
-matters when deploying on free-tier cloud infrastructure).
+- it trains in a couple of seconds on a normal laptop, no GPU
+- the saved model is tiny (a few KB), which matters because I'm deploying on a free-tier host
+- it's easy to explain in a viva/demo - I can actually point at which words pushed the prediction one way or the other, which isn't really true for a black-box deep model
 
-Pipeline:
-1. Review text is submitted via the web UI or `POST /api/predict`.
-2. The text is vectorized using **TF-IDF** (unigrams + bigrams).
-3. A **Logistic Regression** classifier predicts the sentiment label and a
-   probability-based confidence score.
-4. The result is returned as JSON and rendered in the UI as a stamped verdict with a
-   confidence meter.
+Pipeline is:
+1. User types/pastes a review into the web form (or sends it to `/api/predict`)
+2. Text gets vectorized with TF-IDF (unigrams + bigrams, stopwords removed)
+3. A Logistic Regression classifier predicts positive/negative + a confidence score
+4. Result comes back as JSON and gets shown on the page
 
-## 4. Dataset
+## Dataset
 
-- **Source**: `data/generate_dataset.py` programmatically generates a labeled dataset
-  of ~240 short reviews using a template + vocabulary approach across 15 subject
-  categories (product, movie, restaurant, book, phone, laptop, service, app, hotel,
-  game, album, show, gadget, course, headphones) with 20 distinct positive phrasing
-  patterns and 20 distinct negative phrasing patterns.
-- **Why generated data**: this keeps the project fully self-contained and
-  reproducible with zero external downloads or licensing concerns, which is ideal for
-  a demonstration/assignment context.
-- **To extend with a real-world dataset**: swap `data/reviews.csv` for a public
-  dataset such as the [IMDB Movie Reviews dataset](https://ai.stanford.edu/~amaas/data/sentiment/)
-  or the [Amazon Product Reviews dataset](https://huggingface.co/datasets/amazon_polarity)
-  (keeping the same `text,label` CSV schema), then rerun `model/train.py`. No other
-  code changes are required.
-- **Known limitation**: because the generated data follows a limited number of
-  templates, the held-out test accuracy is artificially high (~100%). This is
-  expected for template-based data and is called out here for transparency — it is
-  not a claim of real-world accuracy. Retraining on a real dataset (see above) will
-  give a more realistic accuracy figure, typically 85–92% for this type of
-  TF-IDF + Logistic Regression pipeline on review sentiment tasks.
+I didn't use a downloaded dataset for this - `data/generate_dataset.py` generates one programmatically instead. It combines 15 subject categories (product, movie, restaurant, phone, laptop, etc.) with ~20 positive and ~20 negative sentence templates, so you get a decent variety of review-like sentences (~240 rows total) without needing to download or license anything.
 
-## 5. AI/ML Approach
+Honest caveat: because the data comes from templates, the model gets basically 100% accuracy on the held-out test split. That's not a real-world accuracy number - it's just the model correctly recognizing the same phrasing patterns it was trained on. I'm keeping this in the README instead of hiding it, since a real dataset would obviously give a more modest (and more meaningful) accuracy figure, probably somewhere in the 85-92% range for a TF-IDF + LogReg setup on review text.
 
-| Component | Choice |
-|---|---|
-| Feature extraction | `TfidfVectorizer` (unigrams + bigrams, English stop words removed) |
-| Model | `LogisticRegression` (scikit-learn) |
-| Framework | scikit-learn 1.8 |
-| Serialization | `joblib` |
-| Evaluation | 80/20 stratified train/test split, accuracy + classification report |
+If I (or someone else) wanted to swap in a real dataset, e.g. [IMDB reviews](https://ai.stanford.edu/~amaas/data/sentiment/) or the [Amazon Polarity dataset](https://huggingface.co/datasets/amazon_polarity), you'd just need to replace `data/reviews.csv` (same `text,label` columns) and rerun `model/train.py`. Nothing else in the app needs to change.
 
-This is a supervised binary text classification problem. TF-IDF + Logistic
-Regression was chosen over a deep learning / transformer approach because it:
-- Trains in seconds on CPU only, no GPU dependency
-- Produces a tiny model artifact (~KBs), which keeps the Docker image small and cold
-  starts fast on free-tier cloud platforms
-- Is inherently interpretable (feature weights map directly to words/phrases)
-- Is a well-established, appropriate baseline for this class of problem
+## Model / tooling used
 
-## 6. Application Architecture
+- Feature extraction: `TfidfVectorizer` (unigrams + bigrams, English stopwords removed)
+- Classifier: `LogisticRegression` from scikit-learn
+- Train/test split: 80/20, stratified
+- Saved with `joblib` so the Flask app can just load it at startup instead of retraining every time
+
+## Project structure
 
 ```
-┌─────────────┐      HTTP       ┌──────────────────────┐
-│   Browser   │ ───────────────>│   Flask Application    │
-│  (Web UI)   │ <───────────────│   app/app.py           │
-└─────────────┘     JSON/HTML   │                        │
-                                 │  ┌──────────────────┐  │
-┌─────────────┐      HTTP       │  │ sentiment_pipeline│  │
-│  API client │ ───────────────>│  │   .joblib         │  │
-│ (curl/etc.) │ <───────────────│  │ (TF-IDF + LogReg) │  │
-└─────────────┘     JSON        │  └──────────────────┘  │
-                                 └──────────────────────┘
-                                          │
-                                  Served via Gunicorn
-                                  inside a Docker container
-                                  deployed to the cloud
+review-sentiment-ai/
+├── app/
+│   ├── __init__.py
+│   └── app.py                    # Flask app - serves the UI + API
+├── data/
+│   ├── generate_dataset.py       # builds the training data
+│   └── reviews.csv               # generated dataset
+├── model/
+│   ├── train.py                  # trains + saves the model
+│   └── sentiment_pipeline.joblib # trained model
+├── templates/
+│   └── index.html                # web UI
+├── static/
+├── Dockerfile
+├── requirements.txt
+└── render.yaml
 ```
 
-- `app/app.py` — Flask app: serves the UI (`GET /`), the prediction API
-  (`POST /api/predict`), and a health check (`GET /api/health`) used by cloud
-  platform probes.
-- `templates/index.html` — self-contained HTML/CSS/JS front end (no build step).
-- `model/train.py` — trains and serializes the ML pipeline.
-- `model/sentiment_pipeline.joblib` — the trained, deployable model artifact.
-- `data/generate_dataset.py` — generates the training dataset.
+`app/app.py` handles three routes:
+- `GET /` - the web page
+- `POST /api/predict` - takes `{"text": "..."}`, returns the predicted label + confidence
+- `GET /api/health` - basic health check (mostly useful for whatever platform is hosting it)
 
-## 7. Technology Stack
-
-- **Language**: Python 3.12
-- **Web framework**: Flask 3.1
-- **ML**: scikit-learn 1.8, joblib
-- **Production WSGI server**: Gunicorn
-- **Containerization**: Docker
-- **Cloud deployment target**: Render.com (Docker-based web service) — instructions
-  below also cover Railway, AWS App Runner/Elastic Beanstalk, Azure App Service, and
-  Google Cloud Run, since the container is portable to any of them.
-- **Version control**: Git / GitHub
-
-## 8. Local Setup Instructions
+## Running it locally
 
 ```bash
-# 1. Clone the repository
-git clone <your-repo-url>
+git clone https://github.com/chethuuu/review-sentiment-ai.git
 cd review-sentiment-ai
 
-# 2. Create a virtual environment (recommended)
 python3 -m venv venv
-source venv/bin/activate      # Windows: venv\Scripts\activate
+source venv/bin/activate        # on Windows: venv\Scripts\activate
 
-# 3. Install dependencies
 pip install -r requirements.txt
 
-# 4. Generate the dataset (already included, but regenerable)
+# these two are already generated/trained and committed,
+# but you can regenerate them from scratch if you want
 python3 data/generate_dataset.py
-
-# 5. Train the model (already included, but regenerable)
 python3 model/train.py
 
-# 6. Run the app locally
 python3 app/app.py
-# App will be available at http://localhost:8080
 ```
 
-## 9. Deployment Details
+App runs on http://localhost:8080.
 
-The app is deployed live on **PythonAnywhere** (free tier, no credit card required),
-using their manual WSGI configuration to run the Flask app directly — no Docker
-needed on this platform, since PythonAnywhere natively hosts Python/Flask apps.
+## Deployment
 
-**Live app: https://chethana.pythonanywhere.com**
+Deployed on **PythonAnywhere** (free tier). I went with this over Render/Cloud Run mainly because it doesn't need a card to sign up and it runs Flask apps natively, so I didn't even need the Dockerfile for this particular deployment - PythonAnywhere just runs the app through their WSGI setup.
 
-### How it was deployed (PythonAnywhere)
-1. Create a free account at pythonanywhere.com (Beginner plan, no card required).
-2. Open a Bash console and clone the repo:
-```bash
+Live app: https://chethana.pythonanywhere.com
+
+Steps I followed:
+1. Signed up for a free PythonAnywhere account (Beginner plan, no card needed)
+2. Opened a Bash console there and cloned the repo:
+   ```bash
    git clone https://github.com/chethuuu/review-sentiment-ai.git
    cd review-sentiment-ai
    pip3.13 install --user -r requirements.txt
-```
-3. Go to the **Web** tab → **Add a new web app** → **Manual configuration** →
-   select the matching Python version.
-4. Set **Source code** and **Working directory** to
-   `/home/<username>/review-sentiment-ai`.
-5. Edit the generated WSGI file to import the Flask app:
-```python
+   ```
+3. Web tab → Add a new web app → Manual configuration → picked the matching Python version
+4. Set the source/working directory to `/home/<username>/review-sentiment-ai`
+5. Edited the WSGI file it gives you so it points at the Flask app:
+   ```python
    import sys
    project_home = '/home/<username>/review-sentiment-ai'
    if project_home not in sys.path:
        sys.path.insert(0, project_home)
    from app.app import app as application
-```
-6. Click **Reload** on the Web tab. The app is now live at
-   `https://<username>.pythonanywhere.com`.
+   ```
+6. Hit Reload on the Web tab and it was live at `https://<username>.pythonanywhere.com`
 
-### Docker-based alternatives (supported by the included Dockerfile, not used for this deployment)
+I kept the `Dockerfile` and `render.yaml` in the repo anyway since I built them first before switching to PythonAnywhere, and they still work if someone wants to deploy this as a container instead (Render, Cloud Run, App Runner, Azure App Service - anywhere that takes a Docker image on port 8080). Didn't want to just delete that work.
 
-A `Dockerfile` and `render.yaml` are included in this repo so the app can also be
-deployed as a container on any Docker-friendly platform:
+## Using the API
 
-**Render.com**
-1. Push this repository to GitHub.
-2. In the Render dashboard: **New → Blueprint**, connect your GitHub repo. Render
-   detects `render.yaml` and configures the service automatically.
-3. Render builds the Docker image and deploys it to `https://<service-name>.onrender.com`.
-
-**Google Cloud Run**
+Health check:
 ```bash
-gcloud builds submit --tag gcr.io/<PROJECT_ID>/reviewsense
-gcloud run deploy reviewsense \
-  --image gcr.io/<PROJECT_ID>/reviewsense \
-  --platform managed --port 8080 --allow-unauthenticated
-```
-
-**AWS App Runner**
-```bash
-aws ecr create-repository --repository-name reviewsense
-docker build -t reviewsense .
-docker tag reviewsense:latest <account>.dkr.ecr.<region>.amazonaws.com/reviewsense:latest
-docker push <account>.dkr.ecr.<region>.amazonaws.com/reviewsense:latest
-```
-Then create an App Runner service from that ECR image, port `8080`.
-
-**Azure App Service (container)**
-```bash
-az webapp create --resource-group <rg> --plan <plan> \
-  --name reviewsense --deployment-container-image-name <registry>/reviewsense:latest
-az webapp config appsettings set --resource-group <rg> --name reviewsense \
-  --settings WEBSITES_PORT=8080
-```
-
-## 10. API / Web Application Usage
-
-### Web UI
-Visit the deployed URL (or `http://localhost:8080` locally). Paste a review into the
-text box and click **Stamp it** to see the predicted sentiment and confidence.
-
-### REST API
-
-**Health check**
-```bash
-curl https://<your-app-url>/api/health
+curl https://chethana.pythonanywhere.com/api/health
 # {"status": "ok"}
 ```
 
-**Predict sentiment**
+Predict:
 ```bash
-curl -X POST https://<your-app-url>/api/predict \
+curl -X POST https://chethana.pythonanywhere.com/api/predict \
   -H "Content-Type: application/json" \
   -d '{"text": "This product completely exceeded my expectations!"}'
 ```
@@ -244,66 +143,25 @@ Response:
 }
 ```
 
-Error response (empty/missing text):
+If you send empty/missing text you get a 400 back:
 ```json
 { "error": "Field 'text' is required and cannot be empty." }
 ```
 
-## 11. Docker Instructions
-
-Build and run the container locally:
+## Running with Docker (optional)
 
 ```bash
-# Build the image
 docker build -t reviewsense .
-
-# Run the container
 docker run -p 8080:8080 reviewsense
-
-# App available at http://localhost:8080
 ```
 
-Push to Docker Hub (or any registry):
+## Retraining after changing the dataset
+
 ```bash
-docker tag reviewsense <your-dockerhub-username>/reviewsense:latest
-docker login
-docker push <your-dockerhub-username>/reviewsense:latest
+python3 data/generate_dataset.py
+python3 model/train.py
 ```
 
 ---
 
-## Project Structure
-
-```
-review-sentiment-ai/
-├── app/
-│   ├── __init__.py
-│   └── app.py                    # Flask application (UI + API)
-├── data/
-│   ├── generate_dataset.py       # Dataset generator
-│   └── reviews.csv               # Generated training data
-├── model/
-│   ├── train.py                  # Training script
-│   └── sentiment_pipeline.joblib # Trained model artifact
-├── templates/
-│   └── index.html                # Web UI
-├── static/                       # (reserved for static assets)
-├── Dockerfile
-├── requirements.txt
-├── render.yaml                   # Render.com deployment blueprint
-├── .dockerignore
-├── .gitignore
-└── README.md
-```
-
-## Retraining the Model
-
-To retrain (e.g. after editing the dataset or swapping in a real-world dataset):
-```bash
-python3 data/generate_dataset.py   # optional — regenerate/replace data/reviews.csv
-python3 model/train.py             # retrains and overwrites the model artifact
-```
-
-## License
-
-This project was created for academic/assignment purposes.
+Built for an MSc assignment - not intended as a production-grade sentiment tool, more a demonstration of putting a full ML pipeline (data → model → API → deployed app) together end to end.
