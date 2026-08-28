@@ -1,0 +1,13 @@
+# Render Blueprint — lets Render auto-configure this service.
+# In Render dashboard: New -> Blueprint -> point at this repo.
+# Docs: https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: reviewsense
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    envVars:
+      - key: PORT
+        value: 8080
+    healthCheckPath: /api/health
