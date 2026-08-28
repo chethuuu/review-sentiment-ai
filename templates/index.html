@@ -4,143 +4,204 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ReviewSense</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; }
   body {
     margin: 0;
     min-height: 100vh;
-    background: #f4f5f7;
-    font-family: Arial, Helvetica, sans-serif;
-    color: #222;
+    background: linear-gradient(160deg, #eef2ff 0%, #f7f8fc 45%, #eafaf1 100%);
+    font-family: 'Inter', Arial, sans-serif;
+    color: #24272e;
     display: flex;
     justify-content: center;
-    padding: 40px 16px;
+    padding: 48px 16px;
   }
+
   .card {
     width: 100%;
     max-width: 560px;
     background: #ffffff;
-    border: 1px solid #dcdfe3;
-    border-radius: 8px;
-    padding: 28px 30px 32px;
+    border-radius: 16px;
+    padding: 34px 34px 28px;
+    box-shadow: 0 1px 3px rgba(20, 25, 40, 0.06), 0 12px 30px rgba(20, 25, 40, 0.08);
   }
+
+  .top-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #eef1ff;
+    color: #4f5fd6;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 5px 10px;
+    border-radius: 999px;
+    margin-bottom: 14px;
+  }
+
   h1 {
-    margin: 0 0 4px;
-    font-size: 24px;
+    font-family: 'Poppins', 'Inter', sans-serif;
+    margin: 0 0 6px;
+    font-size: 26px;
+    color: #1b1e27;
   }
+
   .subtitle {
-    margin: 0 0 22px;
-    font-size: 13px;
-    color: #666;
+    margin: 0 0 24px;
+    font-size: 13.5px;
+    line-height: 1.55;
+    color: #666d7a;
   }
+
   label {
     display: block;
-    font-size: 13px;
-    font-weight: bold;
-    margin-bottom: 6px;
-    color: #444;
+    font-size: 12.5px;
+    font-weight: 600;
+    margin-bottom: 7px;
+    color: #454b57;
   }
+
   textarea {
     width: 100%;
-    min-height: 110px;
-    padding: 10px 12px;
+    min-height: 112px;
+    padding: 12px 14px;
     font-family: inherit;
     font-size: 14px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
+    line-height: 1.5;
+    border: 1.5px solid #e2e5ec;
+    border-radius: 10px;
     resize: vertical;
+    background: #fbfbfd;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
   }
   textarea:focus {
     outline: none;
-    border-color: #3b6fd6;
+    border-color: #6c7cf0;
+    box-shadow: 0 0 0 3px rgba(108, 124, 240, 0.15);
+    background: #fff;
   }
+
+  .action-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+  }
+
   button {
-    margin-top: 14px;
     font-family: inherit;
-    background: #3b6fd6;
+    font-weight: 600;
+    font-size: 14px;
+    background: linear-gradient(135deg, #6c7cf0, #5766d8);
     color: #fff;
     border: none;
-    padding: 10px 22px;
-    font-size: 14px;
-    border-radius: 4px;
+    padding: 11px 24px;
+    border-radius: 10px;
     cursor: pointer;
+    box-shadow: 0 6px 16px rgba(87, 102, 216, 0.28);
+    transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease;
   }
-  button:hover { background: #3160bd; }
-  button:disabled { opacity: 0.6; cursor: default; }
+  button:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(87, 102, 216, 0.34); }
+  button:active { transform: translateY(0); }
+  button:disabled { opacity: 0.6; cursor: default; transform: none; box-shadow: none; }
 
   .note {
-    margin-top: 8px;
     font-size: 12px;
-    color: #888;
+    color: #9098a3;
   }
 
   .error {
-    color: #b3261e;
+    color: #c23b2f;
     font-size: 13px;
-    margin-top: 10px;
+    margin-top: 12px;
     display: none;
   }
 
   .result {
-    margin-top: 20px;
-    padding: 14px 16px;
-    border-radius: 4px;
-    border: 1px solid #ddd;
+    margin-top: 22px;
+    padding: 16px 18px;
+    border-radius: 12px;
+    border: 1.5px solid #eee;
     display: none;
+    animation: fadeUp 0.25s ease;
   }
   .result.show { display: block; }
-  .result.positive { background: #eaf7ee; border-color: #bfe3c8; }
-  .result.negative { background: #fdecea; border-color: #f2c2bd; }
+  .result.positive { background: #f0faf3; border-color: #cdeed8; }
+  .result.negative { background: #fdf1f0; border-color: #f4d3cf; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
 
   .label-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
   }
+
   .sentiment {
-    font-weight: bold;
-    font-size: 16px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 700;
+    font-size: 15.5px;
   }
-  .positive .sentiment { color: #1e7d3a; }
-  .negative .sentiment { color: #a3271a; }
+  .positive .sentiment { color: #1e8a45; }
+  .negative .sentiment { color: #c23b2f; }
 
   .conf-text {
     font-size: 12px;
-    color: #666;
+    color: #6b7280;
   }
 
   .bar-bg {
-    margin-top: 8px;
+    margin-top: 10px;
     height: 8px;
-    background: #e2e2e2;
-    border-radius: 4px;
+    background: rgba(0,0,0,0.06);
+    border-radius: 8px;
     overflow: hidden;
   }
   .bar-fill {
     height: 100%;
     width: 0%;
+    border-radius: 8px;
+    transition: width 0.45s ease;
   }
-  .positive .bar-fill { background: #2e9e4f; }
-  .negative .bar-fill { background: #d1453b; }
+  .positive .bar-fill { background: linear-gradient(90deg, #35b06a, #1e8a45); }
+  .negative .bar-fill { background: linear-gradient(90deg, #e0645a, #c23b2f); }
 
   footer {
-    margin-top: 18px;
+    margin-top: 22px;
+    padding-top: 16px;
+    border-top: 1px solid #f0f1f4;
     font-size: 11px;
-    color: #999;
+    color: #a7adb8;
     text-align: center;
   }
 </style>
 </head>
 <body>
   <div class="card">
+    <span class="top-tag">MSc project</span>
     <h1>ReviewSense</h1>
     <p class="subtitle">Paste a product/movie/service review below and it'll tell you if it reads as positive or negative (TF-IDF + Logistic Regression model, no external API used).</p>
 
     <label for="text">Review text</label>
     <textarea id="text">The battery life on this phone is incredible and the camera blew me away.</textarea>
 
-    <button id="analyzeBtn" onclick="analyze()">Analyze</button>
-    <p class="note">Runs the model that's deployed with this app - nothing gets sent anywhere else.</p>
+    <div class="action-row">
+      <button id="analyzeBtn" onclick="analyze()">Analyze</button>
+      <span class="note">Runs the model that's deployed with this app - nothing gets sent anywhere else.</span>
+    </div>
     <p class="error" id="errorMsg"></p>
 
     <div class="result" id="result">
@@ -188,7 +249,7 @@ async function analyze() {
     resultEl.classList.add(data.label, 'show');
 
     document.getElementById('sentimentLabel').textContent =
-      data.label === 'positive' ? 'Positive' : 'Negative';
+      data.label === 'positive' ? '🙂 Positive' : '🙁 Negative';
 
     const pct = Math.round(data.confidence * 100);
     document.getElementById('confVal').textContent = pct + '%';
