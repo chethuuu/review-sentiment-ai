@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ReviewSense — Sentiment Analyzer</title>
+<style>
+  :root {
+    --ink: #1f2a24;
+    --paper: #ece7da;
+    --paper-dark: #ddd6c4;
+    --stub-line: #b9b09a;
+    --good: #2f6f4f;
+    --good-bg: #e1efe3;
+    --bad: #9b3b2c;
+    --bad-bg: #f5e2dd;
+    --accent: #c98a2c;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--paper);
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(31,42,36,0.06) 1px, transparent 0);
+    background-size: 14px 14px;
+    font-family: 'Courier New', ui-monospace, monospace;
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 16px;
+  }
+  .ticket {
+    width: 100%;
+    max-width: 620px;
+    background: var(--paper-dark);
+    border: 2px solid var(--ink);
+    border-radius: 6px;
+    box-shadow: 6px 6px 0 rgba(31,42,36,0.15);
+    position: relative;
+    overflow: hidden;
+  }
+  .ticket::before, .ticket::after {
+    content: "";
+    position: absolute;
+    width: 26px; height: 26px;
+    background: var(--paper);
+    border-radius: 50%;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+  .ticket::before { left: -13px; }
+  .ticket::after { right: -13px; }
+  .head {
+    padding: 28px 32px 20px;
+    border-bottom: 2px dashed var(--stub-line);
+  }
+  .eyebrow {
+    letter-spacing: 0.35em;
+    font-size: 11px;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: bold;
+    margin: 0 0 6px;
+  }
+  h1 {
+    margin: 0;
+    font-size: 30px;
+    letter-spacing: -0.01em;
+  }
+  .sub {
+    margin: 8px 0 0;
+    font-size: 13px;
+    color: #4a5750;
+    line-height: 1.5;
+  }
+  .body-section {
+    padding: 26px 32px 32px;
+  }
+  label {
+    display: block;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    margin-bottom: 8px;
+    color: #4a5750;
+  }
+  textarea {
+    width: 100%;
+    min-height: 120px;
+    padding: 14px;
+    font-family: inherit;
+    font-size: 15px;
+    background: var(--paper);
+    border: 2px solid var(--ink);
+    border-radius: 4px;
+    resize: vertical;
+    color: var(--ink);
+  }
+  textarea:focus {
+    outline: 3px solid var(--accent);
+    outline-offset: 1px;
+  }
+  .row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 16px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  button {
+    font-family: inherit;
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    padding: 13px 26px;
+    font-size: 14px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: transform 0.1s ease;
+  }
+  button:hover { transform: translateY(-1px); }
+  button:active { transform: translateY(1px); }
+  button:disabled { opacity: 0.5; cursor: default; }
+  .hint { font-size: 12px; color: #6b7871; }
+
+  .result {
+    margin-top: 24px;
+    padding: 18px 20px;
+    border-radius: 4px;
+    border: 2px solid var(--ink);
+    display: none;
+  }
+  .result.show { display: block; }
+  .result.positive { background: var(--good-bg); border-color: var(--good); }
+  .result.negative { background: var(--bad-bg); border-color: var(--bad); }
+  .stamp {
+    display: inline-block;
+    font-weight: bold;
+    font-size: 20px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border: 3px solid currentColor;
+    border-radius: 4px;
+    transform: rotate(-3deg);
+  }
+  .positive .stamp { color: var(--good); }
+  .negative .stamp { color: var(--bad); }
+  .confidence-label {
+    margin-top: 12px;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #4a5750;
+  }
+  .meter {
+    margin-top: 6px;
+    height: 10px;
+    background: rgba(0,0,0,0.08);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .meter-fill {
+    height: 100%;
+    background: currentColor;
+    transition: width 0.4s ease;
+  }
+  .positive .meter-fill { background: var(--good); }
+  .negative .meter-fill { background: var(--bad); }
+  .error { color: var(--bad); font-size: 13px; margin-top: 10px; display: none; }
+</style>
+</head>
+<body>
+  <div class="ticket">
+    <div class="head">
+      <p class="eyebrow">Admit One Opinion</p>
+      <h1>ReviewSense</h1>
+      <p class="sub">Paste any review, comment, or feedback below. A TF-IDF + Logistic Regression model reads it and stamps a verdict — positive or negative — with a confidence score.</p>
+    </div>
+    <div class="body-section">
+      <label for="text">Your review</label>
+      <textarea id="text" placeholder="e.g. The battery life on this phone is incredible and the camera blew me away...">The battery life on this phone is incredible and the camera blew me away.</textarea>
+      <div class="row">
+        <button id="analyzeBtn" onclick="analyze()">Stamp it</button>
+        <span class="hint">Runs entirely on the deployed model — no external API calls.</span>
+      </div>
+      <p class="error" id="errorMsg"></p>
+      <div class="result" id="result">
+        <span class="stamp" id="stampLabel">—</span>
+        <div class="confidence-label">Confidence: <span id="confVal">0%</span></div>
+        <div class="meter"><div class="meter-fill" id="meterFill" style="width:0%"></div></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+async function analyze() {
+  const text = document.getElementById('text').value.trim();
+  const btn = document.getElementById('analyzeBtn');
+  const errEl = document.getElementById('errorMsg');
+  const resultEl = document.getElementById('result');
+  errEl.style.display = 'none';
+  if (!text) {
+    errEl.textContent = 'Please enter some text first.';
+    errEl.style.display = 'block';
+    return;
+  }
+  btn.disabled = true;
+  btn.textContent = 'Reading...';
+  try {
+    const res = await fetch('/api/predict', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({text})
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Something went wrong.');
+
+    resultEl.classList.remove('positive', 'negative', 'show');
+    resultEl.classList.add(data.label, 'show');
+    document.getElementById('stampLabel').textContent = data.label === 'positive' ? '✓ Positive' : '✗ Negative';
+    const pct = Math.round(data.confidence * 100);
+    document.getElementById('confVal').textContent = pct + '%';
+    document.getElementById('meterFill').style.width = pct + '%';
+  } catch (e) {
+    errEl.textContent = e.message;
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Stamp it';
+  }
+}
+</script>
+</body>
+</html>
