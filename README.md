@@ -149,50 +149,70 @@ python3 app/app.py
 
 ## 9. Deployment Details
 
-The app is packaged as a single Docker container exposing port `8080` (configurable
-via the `PORT` environment variable, which most cloud platforms inject
-automatically). `render.yaml` is included as a ready-to-use blueprint for Render.
+The app is deployed live on **PythonAnywhere** (free tier, no credit card required),
+using their manual WSGI configuration to run the Flask app directly — no Docker
+needed on this platform, since PythonAnywhere natively hosts Python/Flask apps.
 
-### Option A — Render.com (recommended, free tier available)
+**Live app: https://chethana.pythonanywhere.com**
+
+### How it was deployed (PythonAnywhere)
+1. Create a free account at pythonanywhere.com (Beginner plan, no card required).
+2. Open a Bash console and clone the repo:
+```bash
+   git clone https://github.com/chethuuu/review-sentiment-ai.git
+   cd review-sentiment-ai
+   pip3.13 install --user -r requirements.txt
+```
+3. Go to the **Web** tab → **Add a new web app** → **Manual configuration** →
+   select the matching Python version.
+4. Set **Source code** and **Working directory** to
+   `/home/<username>/review-sentiment-ai`.
+5. Edit the generated WSGI file to import the Flask app:
+```python
+   import sys
+   project_home = '/home/<username>/review-sentiment-ai'
+   if project_home not in sys.path:
+       sys.path.insert(0, project_home)
+   from app.app import app as application
+```
+6. Click **Reload** on the Web tab. The app is now live at
+   `https://<username>.pythonanywhere.com`.
+
+### Docker-based alternatives (supported by the included Dockerfile, not used for this deployment)
+
+A `Dockerfile` and `render.yaml` are included in this repo so the app can also be
+deployed as a container on any Docker-friendly platform:
+
+**Render.com**
 1. Push this repository to GitHub.
 2. In the Render dashboard: **New → Blueprint**, connect your GitHub repo. Render
-   will detect `render.yaml` and configure the service automatically.
-   *(Or: New → Web Service → select the repo → Environment: Docker → it will pick
-   up the `Dockerfile` automatically.)*
-3. Render builds the Docker image and deploys it. Once live, your app is available
-   at `https://<your-service-name>.onrender.com`.
+   detects `render.yaml` and configures the service automatically.
+3. Render builds the Docker image and deploys it to `https://<service-name>.onrender.com`.
 
-### Option B — Google Cloud Run
+**Google Cloud Run**
 ```bash
 gcloud builds submit --tag gcr.io/<PROJECT_ID>/reviewsense
 gcloud run deploy reviewsense \
   --image gcr.io/<PROJECT_ID>/reviewsense \
-  --platform managed \
-  --port 8080 \
-  --allow-unauthenticated
+  --platform managed --port 8080 --allow-unauthenticated
 ```
 
-### Option C — AWS App Runner
-1. Push the image to Amazon ECR:
-   ```bash
-   aws ecr create-repository --repository-name reviewsense
-   docker build -t reviewsense .
-   docker tag reviewsense:latest <account>.dkr.ecr.<region>.amazonaws.com/reviewsense:latest
-   docker push <account>.dkr.ecr.<region>.amazonaws.com/reviewsense:latest
-   ```
-2. In the AWS App Runner console, create a service from that ECR image, set the port
-   to `8080`, and deploy.
+**AWS App Runner**
+```bash
+aws ecr create-repository --repository-name reviewsense
+docker build -t reviewsense .
+docker tag reviewsense:latest <account>.dkr.ecr.<region>.amazonaws.com/reviewsense:latest
+docker push <account>.dkr.ecr.<region>.amazonaws.com/reviewsense:latest
+```
+Then create an App Runner service from that ECR image, port `8080`.
 
-### Option D — Azure App Service (container)
+**Azure App Service (container)**
 ```bash
 az webapp create --resource-group <rg> --plan <plan> \
-  --name reviewsense --deployment-container-image-name <your-registry>/reviewsense:latest
+  --name reviewsense --deployment-container-image-name <registry>/reviewsense:latest
 az webapp config appsettings set --resource-group <rg> --name reviewsense \
   --settings WEBSITES_PORT=8080
 ```
-
-> **Note on submission**: Replace the placeholders above with your actual deployed
-> URL once live, e.g.: `Live app: https://reviewsense.onrender.com`
 
 ## 10. API / Web Application Usage
 
