@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ReviewSense — Sentiment Analyzer</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎫</text></svg>">
 <style>
   :root {
     --ink: #1f2a24;
@@ -223,6 +224,19 @@
   }
   .positive .phrase-tag { color: var(--good); }
   .negative .phrase-tag { color: var(--bad); }
+
+  .ticket-no {
+    font-size: 11px;
+    color: #8a9089;
+  }
+
+  @media (max-width: 480px) {
+    .head { padding: 22px 20px 18px; }
+    .body-section { padding: 20px 20px 24px; }
+    h1 { font-size: 24px; }
+    .sub { font-size: 12.5px; }
+    button { padding: 12px 20px; font-size: 13px; }
+  }
 </style>
 </head>
 <body>
@@ -244,8 +258,11 @@
       </div>
       <p class="error" id="errorMsg"></p>
       <div class="result" id="result">
-        <span class="stamp" id="stampLabel">—</span>
-        <div class="confidence-label">Confidence: <span id="confVal">0%</span></div>
+        <div class="row" style="margin-top:0">
+          <span class="stamp" id="stampLabel">—</span>
+          <span class="ticket-no" id="ticketNo"></span>
+        </div>
+        <div class="confidence-label">Confidence: <span id="confVal">0%</span> <span id="confWord"></span></div>
         <div class="meter"><div class="meter-fill" id="meterFill" style="width:0%"></div></div>
         <div class="phrases" id="phrases" style="display:none">
           <p class="phrases-label">Words that swung it</p>
@@ -256,6 +273,21 @@
   </div>
 
 <script>
+function confidenceWord(pct) {
+  if (pct >= 85) return '(very confident)';
+  if (pct >= 65) return '(fairly confident)';
+  return '(a bit unsure)';
+}
+
+function nextTicketNumber() {
+  let n = 1;
+  try {
+    n = parseInt(localStorage.getItem('reviewsense_ticket_no') || '0', 10) + 1;
+    localStorage.setItem('reviewsense_ticket_no', String(n));
+  } catch (e) {}
+  return n;
+}
+
 function useExample(chipEl) {
   const text = chipEl.textContent.replace(/^"|"$/g, '');
   document.getElementById('text').value = text;
@@ -288,8 +320,10 @@ async function analyze() {
     resultEl.classList.remove('positive', 'negative', 'show');
     resultEl.classList.add(data.label, 'show');
     document.getElementById('stampLabel').textContent = data.label === 'positive' ? '✓ Positive' : '✗ Negative';
+    document.getElementById('ticketNo').textContent = 'No. ' + String(nextTicketNumber()).padStart(4, '0');
     const pct = Math.round(data.confidence * 100);
     document.getElementById('confVal').textContent = pct + '%';
+    document.getElementById('confWord').textContent = confidenceWord(pct);
     document.getElementById('meterFill').style.width = pct + '%';
 
     const phrases = data.key_phrases || [];
