@@ -165,6 +165,64 @@
   .positive .meter-fill { background: var(--good); }
   .negative .meter-fill { background: var(--bad); }
   .error { color: var(--bad); font-size: 13px; margin-top: 10px; display: none; }
+
+  .examples {
+    margin-top: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .example-chip {
+    font-family: inherit;
+    font-size: 11.5px;
+    background: var(--paper);
+    color: #4a5750;
+    border: 1.5px dashed var(--stub-line);
+    padding: 6px 10px;
+    border-radius: 999px;
+    cursor: pointer;
+    text-transform: none;
+    letter-spacing: normal;
+    transition: border-color 0.15s ease, color 0.15s ease;
+  }
+  .example-chip:hover {
+    border-color: var(--accent);
+    color: var(--ink);
+  }
+
+  .result {
+    transform: scale(0.98);
+    opacity: 0;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+  }
+  .result.show { transform: scale(1); opacity: 1; }
+
+  .phrases {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px dashed rgba(31,42,36,0.15);
+  }
+  .phrases-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #6b7871;
+    margin: 0 0 8px;
+  }
+  .phrase-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .phrase-tag {
+    font-size: 12px;
+    padding: 3px 9px;
+    border-radius: 4px;
+    background: rgba(0,0,0,0.06);
+    border: 1px solid currentColor;
+  }
+  .positive .phrase-tag { color: var(--good); }
+  .negative .phrase-tag { color: var(--bad); }
 </style>
 </head>
 <body>
@@ -176,6 +234,10 @@
     <div class="body-section">
       <label for="text">Your review</label>
       <textarea id="text" placeholder="e.g. The battery life on this phone is incredible and the camera blew me away...">The battery life on this phone is incredible and the camera blew me away.</textarea>
+      <div class="examples">
+        <button type="button" class="example-chip" onclick="useExample(this)">"Exceeded all my expectations, thoroughly impressed."</button>
+        <button type="button" class="example-chip" onclick="useExample(this)">"Complete disappointment, I regret buying it."</button>
+      </div>
       <div class="row">
         <button id="analyzeBtn" onclick="analyze()">Stamp it</button>
         <span class="hint">Runs entirely on the deployed model — no external API calls.</span>
@@ -185,16 +247,27 @@
         <span class="stamp" id="stampLabel">—</span>
         <div class="confidence-label">Confidence: <span id="confVal">0%</span></div>
         <div class="meter"><div class="meter-fill" id="meterFill" style="width:0%"></div></div>
+        <div class="phrases" id="phrases" style="display:none">
+          <p class="phrases-label">Words that swung it</p>
+          <div class="phrase-tags" id="phraseTags"></div>
+        </div>
       </div>
     </div>
   </div>
 
 <script>
+function useExample(chipEl) {
+  const text = chipEl.textContent.replace(/^"|"$/g, '');
+  document.getElementById('text').value = text;
+  analyze();
+}
+
 async function analyze() {
   const text = document.getElementById('text').value.trim();
   const btn = document.getElementById('analyzeBtn');
   const errEl = document.getElementById('errorMsg');
   const resultEl = document.getElementById('result');
+  const phrasesEl = document.getElementById('phrases');
   errEl.style.display = 'none';
   if (!text) {
     errEl.textContent = 'Please enter some text first.';
@@ -218,6 +291,15 @@ async function analyze() {
     const pct = Math.round(data.confidence * 100);
     document.getElementById('confVal').textContent = pct + '%';
     document.getElementById('meterFill').style.width = pct + '%';
+
+    const phrases = data.key_phrases || [];
+    if (phrases.length) {
+      document.getElementById('phraseTags').innerHTML =
+        phrases.map(p => `<span class="phrase-tag">${p}</span>`).join('');
+      phrasesEl.style.display = 'block';
+    } else {
+      phrasesEl.style.display = 'none';
+    }
   } catch (e) {
     errEl.textContent = e.message;
     errEl.style.display = 'block';
@@ -226,6 +308,10 @@ async function analyze() {
     btn.textContent = 'Stamp it';
   }
 }
+
+document.getElementById('text').addEventListener('keydown', (e) => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') analyze();
+});
 </script>
 </body>
 </html>

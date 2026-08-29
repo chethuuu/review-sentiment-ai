@@ -26,9 +26,29 @@ pipeline = joblib.load(MODEL_PATH)
 def predict_sentiment(text: str):
     proba = pipeline.predict_proba([text])[0]
     classes = pipeline.classes_
-    label = classes[proba.argmax()]
-    confidence = float(proba.max())
-    return label, confidence
+    idx = proba.argmax()
+    label = classes[idx]
+    confidence = float(proba[idx])
+
+    vectorizer = pipeline.named_steps["tfidf"]
+    clf = pipeline.named_steps["clf"]
+    coefs = clf.coef_[0]
+    feature_names = vectorizer.get_feature_names_out()
+
+    x = vectorizer.transform([text])
+    # coef_ points toward classes_[1]; flip the sign when the predicted
+    # label is classes_[0] so "contribution" always means "pushed toward
+    # the predicted label".
+    sign = 1 if label == classes[1] else -1
+
+    contributions = [
+        (feature_names[i], sign * coefs[i] * x[0, i])
+        for i in x.nonzero()[1]
+    ]
+    contributions.sort(key=lambda pair: pair[1], reverse=True)
+    key_phrases = [word for word, score in contributions[:5] if score > 0]
+
+    return label, confidence, key_phrases
 
 
 @app.route("/")
@@ -44,11 +64,12 @@ def api_predict():
     if not text:
         return jsonify({"error": "Field 'text' is required and cannot be empty."}), 400
 
-    label, confidence = predict_sentiment(text)
+    label, confidence, key_phrases = predict_sentiment(text)
     return jsonify({
         "text": text,
         "label": label,
         "confidence": round(confidence, 4),
+        "key_phrases": key_phrases,
     })
 
 
