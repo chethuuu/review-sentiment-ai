@@ -31,11 +31,13 @@ Pipeline is:
 
 ## Dataset
 
-I didn't use a downloaded dataset for this - `data/generate_dataset.py` generates one programmatically instead. It combines 15 subject categories (product, movie, restaurant, phone, laptop, etc.) with ~20 positive and ~20 negative sentence templates, so you get a decent variety of review-like sentences (~240 rows total) without needing to download or license anything.
+Using a real, publicly available dataset - the **NLTK `movie_reviews` corpus** (2,000 real, human-written movie reviews, 1,000 positive / 1,000 negative), originally collected by Pang & Lee for their sentiment polarity research and distributed through NLTK for anyone to use. `data/build_dataset.py` downloads it and writes it out to `data/reviews.csv` in a plain `text,label` format.
 
-Honest caveat: because the data comes from templates, the model gets basically 100% accuracy on the held-out test split. That's not a real-world accuracy number - it's just the model correctly recognizing the same phrasing patterns it was trained on. I'm keeping this in the README instead of hiding it, since a real dataset would obviously give a more modest (and more meaningful) accuracy figure, probably somewhere in the 85-92% range for a TF-IDF + LogReg setup on review text.
+I first tried generating a synthetic dataset from sentence templates instead (still in the git history if curious), but that felt like it defeated the point of doing a "real" ML project - the model just memorized template phrasing and hit ~100% accuracy, which isn't meaningful. Switched to an actual public dataset for that reason.
 
-If I (or someone else) wanted to swap in a real dataset, e.g. [IMDB reviews](https://ai.stanford.edu/~amaas/data/sentiment/) or the [Amazon Polarity dataset](https://huggingface.co/datasets/amazon_polarity), you'd just need to replace `data/reviews.csv` (same `text,label` columns) and rerun `model/train.py`. Nothing else in the app needs to change.
+Test accuracy on the held-out split is **~81%**, which is a much more honest number for a TF-IDF + Logistic Regression baseline on real review text.
+
+Worth noting: since this is trained specifically on **movie** reviews, it generalizes reasonably to other review domains (product/service reviews still use a lot of the same sentiment vocabulary - "brilliant", "terrible", "waste of time", etc.) but won't be as accurate on those as it is on movie reviews specifically. If I wanted better cross-domain accuracy, the natural next step would be training on a bigger, more general dataset like the full 50k-review [IMDB dataset](https://ai.stanford.edu/~amaas/data/sentiment/) or [Amazon Polarity](https://huggingface.co/datasets/amazon_polarity) - same `text,label` CSV format, so it's a drop-in swap for `data/reviews.csv` followed by rerunning `model/train.py`.
 
 ## Model / tooling used
 
@@ -60,6 +62,7 @@ The model is trained offline (`model/train.py`) and saved as a `.joblib` file th
 - Python 3
 - Flask (web framework + API)
 - scikit-learn (TF-IDF + Logistic Regression) and joblib (saving/loading the model)
+- NLTK (one-off, just to pull the movie_reviews dataset - not needed to run the app itself)
 - Gunicorn (production WSGI server, used inside the Docker image)
 - Docker (built but not used for the actual deployment - see below)
 - Deployed on PythonAnywhere
@@ -72,8 +75,8 @@ review-sentiment-ai/
 │   ├── __init__.py
 │   └── app.py                    # Flask app - serves the UI + API
 ├── data/
-│   ├── generate_dataset.py       # builds the training data
-│   └── reviews.csv               # generated dataset
+│   ├── build_dataset.py          # downloads/builds the training data
+│   └── reviews.csv               # the dataset (NLTK movie_reviews corpus)
 ├── model/
 │   ├── train.py                  # trains + saves the model
 │   └── sentiment_pipeline.joblib # trained model
@@ -101,9 +104,10 @@ source venv/bin/activate        # on Windows: venv\Scripts\activate
 
 pip install -r requirements.txt
 
-# these two are already generated/trained and committed,
+# these two are already built/trained and committed,
 # but you can regenerate them from scratch if you want
-python3 data/generate_dataset.py
+# (needs nltk for the dataset step: pip install nltk)
+python3 data/build_dataset.py
 python3 model/train.py
 
 python3 app/app.py
@@ -182,7 +186,8 @@ docker run -p 8080:8080 reviewsense
 ## Retraining after changing the dataset
 
 ```bash
-python3 data/generate_dataset.py
+pip install nltk   # only needed for this step
+python3 data/build_dataset.py
 python3 model/train.py
 ```
 
