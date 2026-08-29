@@ -44,6 +44,26 @@ If I (or someone else) wanted to swap in a real dataset, e.g. [IMDB reviews](htt
 - Train/test split: 80/20, stratified
 - Saved with `joblib` so the Flask app can just load it at startup instead of retraining every time
 
+## Architecture
+
+Pretty simple, really - it's just a Flask app with a model file loaded into memory:
+
+```
+Browser / curl  --HTTP-->  Flask app (app/app.py)  --loads-->  sentiment_pipeline.joblib
+                <--JSON--                                      (TF-IDF + Logistic Regression)
+```
+
+The model is trained offline (`model/train.py`) and saved as a `.joblib` file that gets committed to the repo, so the app just loads it once at startup instead of training anything at request time. Both the web page (`GET /`) and the API (`POST /api/predict`) call the same `predict_sentiment()` function underneath - the HTML page is just a thin wrapper around the API.
+
+## Tech stack
+
+- Python 3
+- Flask (web framework + API)
+- scikit-learn (TF-IDF + Logistic Regression) and joblib (saving/loading the model)
+- Gunicorn (production WSGI server, used inside the Docker image)
+- Docker (built but not used for the actual deployment - see below)
+- Deployed on PythonAnywhere
+
 ## Project structure
 
 ```
@@ -119,7 +139,11 @@ Steps I followed:
 
 I kept the `Dockerfile` and `render.yaml` in the repo anyway since I built them first before switching to PythonAnywhere, and they still work if someone wants to deploy this as a container instead (Render, Cloud Run, App Runner, Azure App Service - anywhere that takes a Docker image on port 8080). Didn't want to just delete that work.
 
-## Using the API
+## Using the app
+
+**Web UI** - just open https://chethana.pythonanywhere.com (or `http://localhost:8080` if running it locally), paste a review into the box, and hit Analyze. It shows the predicted label and how confident the model is.
+
+**API** - same thing, but for calling it from code/curl/Postman instead of a browser.
 
 Health check:
 ```bash
