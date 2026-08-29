@@ -6,31 +6,32 @@ Assignment: End-to-End AI Application Development and Cloud Deployment
 Github: https://github.com/chethuuu/review-sentiment-ai
 Live app: https://chethana.pythonanywhere.com
 
-What I built - ReviewSense, a sentiment analyzer for reviews. You give it a review
-(product, movie, whatever) and it tells you if it's positive or negative, with a
-confidence %. Used TF-IDF + Logistic Regression instead of a transformer since it
-trains fast, no GPU needed, and it's easy to actually explain what the model is
-doing (which words pushed it toward positive/negative etc).
+For this assignment I built ReviewSense, basically a sentiment checker for
+reviews - paste in a review and it says positive or negative with a confidence
+score. I used TF-IDF + Logistic Regression for the model instead of something
+like a transformer, mainly because it's quick to train on my laptop, doesn't
+need a GPU, and I can actually see which words the model is reacting to,
+which is more useful for a small project like this than a black box model.
 
-Trained on the NLTK movie_reviews corpus - 2000 real movie reviews (1000
-positive / 1000 negative) from Pang & Lee's polarity dataset, a well known
-public dataset for this kind of task. data/build_dataset.py downloads it and
-writes it to data/reviews.csv. Test accuracy is ~81%, which is realistic for
-this setup on real review text.
+For data I used the NLTK movie_reviews dataset, its 2000 real movie reviews
+(1000 pos, 1000 neg) from the Pang & Lee sentiment dataset, so its an actual
+public dataset and not something I made up. data/build_dataset.py is the
+script that pulls it down and turns it into data/reviews.csv. Got about 81%
+accuracy on the test split which seems like a fair number for this kind of
+model on real text.
 
-Quick check against what the assignment asked for:
+Below is just how I think this maps to what was asked in the assignment doc:
 
-- AI use case -> sentiment analysis / NLP, done
-- End to end app -> yes, has both a web page and an API (/api/predict), same
-  model behind both
-- Public dataset -> yes, real dataset (NLTK movie_reviews), not made up
-- Cloud deployment -> deployed on PythonAnywhere, link above
-- Docker -> wasn't required since I deployed directly, but I made a Dockerfile
-  anyway and tested it builds/runs, it's in the repo
-- Public repo -> yes, all the code + dataset script + model + Dockerfile + readme
-  are on github
-- README -> covers all the points asked (problem, use case, solution, dataset,
-  model/approach, architecture, tech stack, setup, deployment, api/web usage,
-  docker)
+- AI use case - sentiment analysis (NLP)
+- end to end app - yes, theres a web page and also an API endpoint
+  (/api/predict) using the same model
+- dataset - real one (movie_reviews from nltk), not synthetic
+- deployed to cloud - PythonAnywhere, link is above
+- docker - technically not required since I deployed directly, but I still
+  wrote a Dockerfile and tested that it builds/runs okay, so its included
+- repo - everything is pushed to github, public
+- readme - tried to cover all the sections mentioned in the assignment doc
+  (problem statement, use case, dataset, approach, architecture, setup,
+  deployment, usage, docker etc)
 
-think that covers everything, README has the full details if needed.
+Think thats everything, more detail is in the README if needed.

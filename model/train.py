@@ -1,8 +1,5 @@
-"""
-Trains a TF-IDF + Logistic Regression sentiment classifier on the
-generated reviews dataset, evaluates it, and saves the fitted pipeline
-to model/sentiment_pipeline.joblib for use by the Flask app.
-"""
+# trains the TF-IDF + Logistic Regression model on data/reviews.csv,
+# prints accuracy, and saves the pipeline for the Flask app to load
 import csv
 import joblib
 from sklearn.feature_extraction.text import TfidfVectorizer

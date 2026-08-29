@@ -1,11 +1,7 @@
-"""
-ReviewSense - Sentiment Analysis Web Application
-
-Serves:
-  GET  /                -> Web UI (HTML form)
-  POST /api/predict     -> JSON API: {"text": "..."} -> {"label": "...", "confidence": ...}
-  GET  /api/health       -> Health check for cloud platform probes
-"""
+# ReviewSense - Flask app
+# GET  /             - web page
+# POST /api/predict  - takes {"text": "..."}, returns label + confidence
+# GET  /api/health   - health check
 import os
 import joblib
 from flask import Flask, request, jsonify, render_template

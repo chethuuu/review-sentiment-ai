@@ -1,12 +1,7 @@
-"""
-Builds data/reviews.csv from the NLTK movie_reviews corpus - 2,000 real,
-human-written movie reviews (1000 positive / 1000 negative), originally
-collected by Pang & Lee for their polarity classification research and
-distributed publicly through NLTK. Downloads the corpus on first run.
-
-Needs nltk installed (not a runtime dependency of the app itself):
-    pip install nltk
-"""
+# downloads the NLTK movie_reviews corpus (2000 real reviews, Pang & Lee's
+# polarity dataset) and writes it out as data/reviews.csv
+# needs nltk installed - not needed to run the app itself, just this script:
+#   pip install nltk
 import csv
 
 import nltk

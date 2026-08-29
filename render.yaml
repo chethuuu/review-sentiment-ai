@@ -1,6 +1,6 @@
-# Render Blueprint — lets Render auto-configure this service.
+# Render blueprint, not actually used for the live deployment (that's on
+# PythonAnywhere) - kept from when I was testing a Docker-based deploy option.
 # In Render dashboard: New -> Blueprint -> point at this repo.
-# Docs: https://render.com/docs/blueprint-spec
 services:
   - type: web
     name: reviewsense
